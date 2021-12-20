@@ -1,3 +1,4 @@
+import babel from 'rollup-plugin-babel'
 export default {
     input:'./src/index.js', //入口文件
     output:{
@@ -7,6 +8,9 @@ export default {
         sourcemap:true //es6源代码
     },
     plugins:[
-        
+        babel({
+            exclude:'node_modules/**'
+        })
+
     ]
 }
