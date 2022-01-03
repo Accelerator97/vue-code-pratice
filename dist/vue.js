@@ -46,15 +46,83 @@
     return _typeof(data) === 'object' && data !== null;
   }
 
+  var oldArrayPrototype = Array.prototype;
+  var arrayMethods = Object.create(oldArrayPrototype); //以Array的原型作为当前对象的原型 arrayMehthods.__proto__ = Array.prototype
+
+  var methods = ['push', 'shift', 'unshift', 'pop', 'reverse', 'sort', 'splice'];
+  methods.forEach(function (method) {
+    //用户如果调用以上七个方法会用我自己重写的，否则用数组原来的方法
+    arrayMethods[method] = function () {
+      var _oldArrayPrototype$me;
+
+      for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+        args[_key] = arguments[_key];
+      }
+
+      (_oldArrayPrototype$me = oldArrayPrototype[method]).call.apply(_oldArrayPrototype$me, [this].concat(args)); //根据当前数组获取Observer类的实例
+      //这里的this指向数组
+
+
+      var ob = this.__ob__;
+      var inserted;
+
+      switch (method) {
+        case 'push':
+          inserted = args;
+        //args就是新增的内容
+
+        case 'unshift':
+          inserted = args;
+        //args就是新增的内容
+
+        case 'splice':
+          //xxx.splice(0,1,xxx) 在下标为0的地方插入一个数xxx 
+          //此时args的第三个参数就是xxx 为新增的内容  
+          inserted = args.slice(2);
+      } //如果有新增的内容要继续进行劫持，需要观察数组的每一项，而不是数组
+
+
+      if (inserted) {
+        ob.obserArray(inserted);
+      }
+    };
+  });
+
   var Observer = /*#__PURE__*/function () {
     function Observer(data) {
       _classCallCheck(this, Observer);
 
-      //对对象所有属性进行劫持
-      this.walk(data);
+      //这里的this是Observer类的实例
+      //给data添加__ob__属性，这是为了如果data是数组的情况下，可以访问Observer类上的方法observeArray
+      //所有被劫持的属性都有__ob__
+      //写成这种形式是为了防止如果是对象走walk方法然后添加了__ob__,因为__ob__对应的this是一个实例对象，所以会不停地对__ob__进行观测，导致爆栈
+      Object.defineProperty(data, '__ob__', {
+        value: this,
+        enumerable: false //不可枚举
+
+      });
+      data.__ob__ = this; //对于数组，Vue没有监控索引的变化，但是如果索引对应的数据是对象需要被监控 
+
+      if (Array.isArray(data)) {
+        //数组劫持的逻辑
+        //对数组原来的方法进行改写，切片编程，高阶函数
+        data.__proto__ = arrayMethods; //如果数组里面的数据是对象类型，那么需要监控对象的变化
+
+        this.observeArray(data);
+      } else {
+        this.walk(data); //对对象所有属性进行劫持
+      }
     }
 
     _createClass(Observer, [{
+      key: "observeArray",
+      value: function observeArray(data) {
+        //对于数组中的对象再次进行监控 递归
+        data.forEach(function (item) {
+          observe(item);
+        });
+      }
+    }, {
       key: "walk",
       value: function walk(data) {
         //Object.keys保证是对对象的私有属性进行遍历
@@ -89,8 +157,18 @@
       return;
     }
 
+    if (data.__ob__) {
+      //如果data有__ob__属性，说明已经被观测过了
+      return;
+    }
+
     return new Observer(data);
   }
+  /**
+   * 小结：
+   * 如果数据是对象，会不断递归进行劫持
+   * 如果是数组，会劫持数组的方法，如果数组中的数据是对象，还会进行检测劫持
+   */
 
   function initState(vm) {
     var opts = vm.$options;
