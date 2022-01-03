@@ -11,7 +11,6 @@ class Observer{
             value:this,
             enumerable:false //不可枚举
         })
-        data.__ob__ = this
         //对于数组，Vue没有监控索引的变化，但是如果索引对应的数据是对象需要被监控 
         if(Array.isArray(data)){
             //数组劫持的逻辑

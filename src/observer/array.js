@@ -35,7 +35,7 @@ methods.forEach(method => {
         } 
         //如果有新增的内容要继续进行劫持，需要观察数组的每一项，而不是数组
         if(inserted){
-              ob.obserArray(inserted)
+              ob.observeArray(inserted)
         }
     }
 })
