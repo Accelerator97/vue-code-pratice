@@ -11,7 +11,6 @@ let methods = [
     'sort',
     'splice'
 ]
-
 methods.forEach(method => {
     //用户如果调用以上七个方法会用我自己重写的，否则用数组原来的方法
     arrayMethods[method] = function(...args){
